@@ -1,0 +1,357 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Level Editor</title>
+<script src="http://www.jar42.com/brine/engine/brine.js"></script>
+<script src="../lightprism/polygon.js"></script>
+<script src="../lightprism/lightprism.js"></script>
+<script src="lights.js"></script>
+<script>
+window.onload = function() {
+	var canvas = document.getElementById('canvas');
+	//var ctx = canvas.getContext('2d');
+	var p = document.getElementById("para");
+	
+	var selectFlag = false;
+	var startX = 0;
+	var startY = 0;
+	var cellSize = 40;
+	gridRows = 15;
+	gridCols = 23;
+	map_width = gridCols;
+	map_height = gridRows;
+	var background = new Array(gridCols);
+	for(i=0; i < background.length; i++){
+		background[i] = new Array(gridRows);
+	}
+	var foreground = new Array(gridCols);
+	for(i=0; i < foreground.length; i++){
+		foreground[i] = new Array(gridRows);
+	}
+	var middleground = new Array(gridCols);
+	for(i=0; i < middleground.length; i++){
+		middleground[i] = new Array(gridRows);
+	}
+	
+	for(i = 0; i < gridCols; i++){
+		for(j = 0; j < gridRows; j++){
+			background[i][j] = -1;
+			middleground[i][j] = -1;
+			foreground[i][j] = -1;
+		}
+	}
+
+
+	start();
+	var editor_sprite = new Sprite();
+
+	game.addChild(editor_sprite);
+	game.lightManager.col_map = middleground;
+	editor_sprite.index = 5;
+
+
+
+
+	//tileNum corresponds to which tile within the tilesheet is being used.
+	var tileNum = 0;
+ 	window.addEventListener('keydown', function(event){
+		if(!light_input) {
+			if(event.keyCode === 49){
+				ground = "b";
+				p.innerHTML = "On BackGround";
+			}else if(event.keyCode === 50){
+				ground = "m";
+				p.innerHTML = "On MiddleGround";
+			}else if(event.keyCode === 51){
+				ground = "f";
+				p.innerHTML = "On ForeGround";
+			}else if(event.keyCode === 65){ // a - left
+				startX--;
+				if(startX<0) {
+					startX = 0;
+				}
+			}else if(event.keyCode === 68){ // d - right
+				startX++;
+				if(startX>gridCols-canvas.width/cellSize) {
+					startX = gridCols-canvas.width/cellSize;
+				}
+			}else if(event.keyCode === 87){ // w - up
+				startY--;
+				if(startY<0) {
+					startY = 0;
+				}
+			}else if(event.keyCode === 83){ // s - down
+				startY++;
+				if(startY>gridRows-canvas.height/cellSize) {
+					startY = gridRows-canvas.height/cellSize;
+				}
+			}else if(event.keyCode === 16){ // shift
+				selectFlag = true;
+			}
+		}
+	        game.lightManager.x_off = startX*cellSize;
+                game.lightManager.y_off = startY*cellSize;
+                return true;
+	});
+
+ 	window.addEventListener('keyup', function(event){
+		if(event.keyCode === 16){ // shift
+			selectFlag = false;
+		}
+	});
+	
+	//when mouse button is down, set grid cell to current tileNum
+	var mouseFlag = false;
+	var ground = "b";
+	
+	canvas.onmousedown = function(e){
+		if(!light_input) {
+			if(!selectFlag){
+				mouseFlag = true;
+				if(ground == "b"){
+					background[Math.floor((e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft - 11)/cellSize)+startX][Math.floor((e.clientY + document.body.scrollTop + document.documentElement.scrollTop - 11)/cellSize)+startY] = tileNum;
+				}else if(ground == "f"){
+					foreground[Math.floor((e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft - 11)/cellSize)+startX][Math.floor((e.clientY + document.body.scrollTop + document.documentElement.scrollTop - 11)/cellSize)+startY] = tileNum;
+				}else if(ground == "m"){
+					middleground[Math.floor((e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft - 11)/cellSize)+startX][Math.floor((e.clientY + document.body.scrollTop + document.documentElement.scrollTop - 11)/cellSize)+startY] = tileNum;
+				}
+			} else {
+				if(ground == "b"){
+					tileNum = background[Math.floor((e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft - 11)/cellSize)+startX][Math.floor((e.clientY + document.body.scrollTop + document.documentElement.scrollTop - 11)/cellSize)+startY];
+				}else if(ground == "f"){
+					tileNum = foreground[Math.floor((e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft - 11)/cellSize)+startX][Math.floor((e.clientY + document.body.scrollTop + document.documentElement.scrollTop - 11)/cellSize)+startY];
+				}else if(ground == "m"){
+					tileNum =middleground[Math.floor((e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft - 11)/cellSize)+startX][Math.floor((e.clientY + document.body.scrollTop + document.documentElement.scrollTop - 11)/cellSize)+startY];
+				}
+			}
+		}
+	}
+	document.onmouseup = function(){
+		mouseFlag = false;
+	}
+
+	//if mouse is dragged, then change all grid cells that the mouse touches to current tileNum
+	canvas.onmousemove = function(e){
+		if(mouseFlag){
+			if(ground == "b"){
+				background[Math.floor((e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft - 11)/cellSize)+startX][Math.floor((e.clientY + document.body.scrollTop + document.documentElement.scrollTop - 11)/cellSize)+startY] = tileNum;
+			}else if(ground == "f"){
+				foreground[Math.floor((e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft - 11)/cellSize+startX)][Math.floor((e.clientY + document.body.scrollTop + document.documentElement.scrollTop - 11)/cellSize)+startY] = tileNum;				
+			}else if(ground == "m"){
+				middleground[Math.floor((e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft - 11)/cellSize)+startX][Math.floor((e.clientY + document.body.scrollTop + document.documentElement.scrollTop - 11)/cellSize)+startY] = tileNum;				
+			}
+		}
+	}
+	//Store tiles into Array
+	var  image = document.getElementById("tiles");
+	var tilesPerRow = image.width/cellSize;
+	var tilesPerCol = image.height/cellSize;
+	var tileTotal = (tilesPerRow) * (tilesPerCol);
+	
+	//Clicking on image will set tileNum to corresponding tile that was clicked
+	image.onclick = function(e){
+		clickX = e.clientX-this.offsetLeft + document.body.scrollLeft;
+		clickY = e.clientY-this.offsetTop + document.body.scrollTop;
+
+		tileNum = (Math.floor(clickX/cellSize)*cellSize+(Math.floor(clickY/cellSize)*cellSize*image.width/cellSize))/cellSize;
+
+		// sets clear tiles to -1
+		switch(tileNum) {
+			case 34:
+			case 35:
+			case 42:
+			case 43:
+			case 44:
+			case 51:
+			case 52:
+			case 53:
+			case 59:
+			case 60:
+			case 68:
+			case 69:
+			case 88:
+			case 89:
+			case 111:
+			case 112:
+			case 113:
+			case 114:
+			case 115:
+			case 116:
+			case 120:
+			case 121:
+			case 122:
+			case 123:
+			case 124:
+			case 125:
+			case 129:
+			case 130:
+			case 131:
+			case 132:
+			case 133:
+			case 134:
+			tileNum = -1;
+			break;
+		}
+         
+
+		//console.log(tileNum);
+	}
+	
+	//Compares each grid cell with a possible tile number and if there is a match, draw that tile inside the the cell.
+	editor_sprite.draw = function (ctx) {
+
+		for(i = startX; i < startX+canvas.width/cellSize; i++){
+			for(j = startY; j < startY+canvas.height/cellSize; j++){
+				if(background[i][j] != -1){
+					var t = background[i][j];
+					var tx = i-startX;
+					var ty = j-startY;
+					ctx.drawImage(image, cellSize*(t%tilesPerRow), Math.floor(t/tilesPerRow)*cellSize, cellSize, cellSize, tx*cellSize, ty*cellSize, cellSize, cellSize);
+				}
+			}
+		}
+		ctx.fillStyle = "rgba(0, 0, 0, 0.4)";				       
+		ctx.fillRect(0,0,canvas.width,canvas.height);
+
+		for(i = startX; i < startX+canvas.width/cellSize; i++){
+			for(j = startY; j < startY+canvas.height/cellSize; j++){
+				var tx = i-startX;
+				var ty = j-startY;
+
+				if(middleground[i][j] != -1){
+					t = middleground[i][j];
+					ctx.drawImage(image, cellSize*(t%tilesPerRow), Math.floor(t/tilesPerRow)*cellSize, cellSize, cellSize, tx*cellSize, ty*cellSize, cellSize, cellSize);
+				}
+				if(foreground[i][j] != -1){
+					t = foreground[i][j];
+					ctx.drawImage(image, cellSize*(t%tilesPerRow), Math.floor(t/tilesPerRow)*cellSize, cellSize, cellSize, tx*cellSize, ty*cellSize, cellSize, cellSize);
+				}			   
+			}
+		}
+	}
+	function saveMap(){
+		var levelString = gridCols + " " + gridRows + "<br>" + "b<br>"
+		for(i = 0; i < gridRows; i++){
+			levelString += "[ "
+			for(j = 0; j < gridCols; j++){
+				levelString += background[j][i] + " "
+			}
+			levelString += "]<br>"
+		}
+		levelString += "m<br>";
+		for(i = 0; i < gridRows; i++){
+			levelString += "[ "
+			for(j = 0; j < gridCols; j++){
+				levelString += middleground[j][i] + " "
+			}
+			levelString += "]<br>"
+		}
+		levelString += "f<br>";
+		for(i = 0; i < gridRows; i++){
+			levelString += "[ "
+			for(j = 0; j < gridCols; j++){
+				levelString += foreground[j][i] + " "
+			}
+			levelString += "]<br>"
+		}
+		levelString += "x<br>";
+
+		for(i in game.lightManager.lights){
+			light = game.lightManager.lights[i];
+			levelString += "" + parseInt(light.x) + "," + parseInt(light.y) + "," + parseInt(light.angle) + "," + parseInt(light.radius) + "," + parseInt(light.spread) + "," + light.color_idx + "," + (light.move_bool ? "true" : "false") + "," + parseInt(light.move_angle) + "," + parseFloat(light.move_speed) + "," + parseInt(light.move_time) + "," + (light.rotate_bool ? "true" : "false") + "," + parseInt(light.rotate_type) + "," + parseFloat(light.rotate_speed) + "," + parseInt(light.rotate_range) + "<br>"
+		}
+		levelString += "z<br>";
+		//console.log(levelString);
+		document.getElementById("demo").innerHTML = levelString;
+	}
+	function loadMap(textfile){
+		var contents = textfile;
+		//console.log(contents);
+		var line = contents.substr(0, contents.indexOf("\n"));
+		var n = line.split(" ");
+		var gridWidth = parseInt(n[0]);
+		var gridHeight = parseInt(n[1]);
+		//canvas.width = gridWidth * cellSize;
+		//canvas.height = gridHeight * cellSize;
+
+		line = contents.substring(contents.indexOf('b'), contents.indexOf('m'));
+		n = line.split(" ");
+		t = 1;
+		for(j=0; j < gridHeight; j++){
+			for(i = 0; i < gridWidth; i++){
+				if(t%(gridWidth + 1) == 0){
+					t++;
+				}
+				background[i][j] = n[t++];
+			}
+		}
+		line = contents.substring(contents.indexOf('m'), contents.indexOf('f'));
+		n = line.split(" ");
+		t = 1;
+		for(j=0; j < gridHeight; j++){
+			for(i = 0; i < gridWidth; i++){
+				if(t%(gridWidth + 1) == 0){
+					t++;
+				}
+				middleground[i][j] = n[t++];
+			}
+		}
+		line = contents.substring(contents.indexOf('f'), contents.indexOf('x'));
+		n = line.split(" ");
+		t = 1;
+		for(j=0; j < gridHeight; j++){
+			for(i = 0; i < gridWidth; i++){
+				if(t%(gridWidth + 1) == 0){
+					t++;
+				}
+				foreground[i][j] = n[t++];
+			}
+		}
+
+		line = contents.substring(contents.indexOf('x'), contents.indexOf('z'));
+		n = line.split("\n");
+		for(var i=1; i<n.length; i++) {
+			var v = n[i].split(",");
+			game.lightManager.lights.push(new Light(parseInt(v[0]), parseInt(v[1]), parseInt(v[2]), parseInt(v[3]), parseInt(v[4]), parseInt(v[5]), (v[6]=="true"? true : false), parseFloat(v[7]), parseFloat(v[8]), parseInt(v[9]), (v[10]=="true"? true : false), parseFloat(v[11]), parseFloat(v[12]), parseFloat(v[13])));
+		}
+	}
+	
+
+	function clickLoad(){
+		var level1 = new XMLHttpRequest();
+		level1.onreadystatechange = function(){
+			if(this.readyState == this.DONE) {
+				loadMap(level1.responseText);
+			}
+		}
+		level1.open("GET", "rotationlevel.txt", true);
+		level1.send();
+	}
+	
+	var save = document.createElement("BUTTON");
+	var saveText = document.createTextNode("Save");
+	save.appendChild(saveText);
+	save.addEventListener("click", saveMap, true);
+	document.body.appendChild(save);
+	
+	var load = document.createElement("BUTTON");
+	var text = document.createTextNode("Load");
+	load.appendChild(text);
+	load.addEventListener("click", clickLoad, true);
+	document.body.appendChild(load);
+}
+</script>
+
+</head>
+<body>
+  <canvas id = "canvas" width = "800" height = "600" style = "border:solid black;">
+</canvas>
+<img id = "tiles" src = "tiles_concept_01.png"><br>
+Key 1 for BackGround<br>
+Key 2 for MiddleGround<br>
+Key 3 for ForeGround<br>
+<p id = "para">On BackGround</p>
+<div id = "demo" ></div>
+
+</body>
+</html>
